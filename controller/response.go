@@ -6,35 +6,41 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+/*
+{
+	"code": 10000, // 程序中的错误码
+	"msg": xx,     // 提示信息
+	"data": {},    // 数据
+}
+
+*/
+
 type ResponseData struct {
-	Code    MyCode      `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code ResCode     `json:"code"`
+	Msg  interface{} `json:"msg"`
+	Data interface{} `json:"data,omitempty"`
 }
 
-func ResponseError(ctx *gin.Context, c MyCode) {
-	rd := &ResponseData{
-		Code:    c,
-		Message: c.Msg(),
-		Data:    nil,
-	}
-	ctx.JSON(http.StatusOK, rd)
+func ResponseError(c *gin.Context, code ResCode) {
+	c.JSON(http.StatusOK, &ResponseData{
+		Code: code,
+		Msg:  code.Msg(),
+		Data: nil,
+	})
 }
 
-func ResponseErrorWithMsg(ctx *gin.Context, code MyCode, errMsg string) {
-	rd := &ResponseData{
-		Code:    code,
-		Message: errMsg,
-		Data:    nil,
-	}
-	ctx.JSON(http.StatusOK, rd)
+func ResponseErrorWithMsg(c *gin.Context, code ResCode, msg interface{}) {
+	c.JSON(http.StatusOK, &ResponseData{
+		Code: code,
+		Msg:  msg,
+		Data: nil,
+	})
 }
 
-func ResponseSuccess(ctx *gin.Context, data interface{}) {
-	rd := &ResponseData{
-		Code:    CodeSuccess,
-		Message: CodeSuccess.Msg(),
-		Data:    data,
-	}
-	ctx.JSON(http.StatusOK, rd)
+func ResponseSuccess(c *gin.Context, data interface{}) {
+	c.JSON(http.StatusOK, &ResponseData{
+		Code: CodeSuccess,
+		Msg:  CodeSuccess.Msg(),
+		Data: data,
+	})
 }

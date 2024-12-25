@@ -2,53 +2,57 @@ package routers
 
 import (
 	"bluebell_backend/controller"
+	//"bluebell_backend/logger"
+	"bluebell_backend/middlewares"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter() *gin.Engine {
-	//gin.SetMode(gin.ReleaseMode)
+func SetupRouter(mode string) *gin.Engine {
+	if mode == gin.ReleaseMode {
+		gin.SetMode(gin.ReleaseMode) // gin设置成发布模式
+	}
 	//r := gin.New()
+	//r.Use(logger.GinLogger(), logger.GinRecovery(true), middlewares.RateLimitMiddleware(2*time.Second, 1))
 	//r.Use(logger.GinLogger(), logger.GinRecovery(true))
 	r := gin.Default()
-
 	r.LoadHTMLFiles("./index.html")
 	r.Static("/static", "./static")
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(http.StatusOK, "pong")
 	})
-	
+
+	//r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	v1 := r.Group("/api/v1")
-	v1.POST("/login", controller.LoginHandler)
+
+	// 注册
 	v1.POST("/signup", controller.SignUpHandler)
-	v1.GET("/refresh_token", controller.RefreshTokenHandler)
+	// 登录
+	v1.POST("/login", controller.LoginHandler)
 
-	v1.Use(controller.JWTAuthMiddleware())
+	// 根据时间或分数获取帖子列表
+	v1.GET("/posts2", controller.GetPostListHandler2)
+	v1.GET("/posts", controller.GetPostListHandler)
+	v1.GET("/community", controller.CommunityHandler)
+	v1.GET("/community/:id", controller.CommunityDetailHandler)
+	v1.GET("/post/:id", controller.GetPostDetailHandler)
+
+	v1.Use(middlewares.JWTAuthMiddleware()) // 应用JWT认证中间件
+
 	{
-
-		v1.GET("/community", controller.CommunityHandler)
-		v1.GET("/community/:id", controller.CommunityDetailHandler)
-
 		v1.POST("/post", controller.CreatePostHandler)
-		v1.GET("/post/:id", controller.PostDetailHandler)
-		v1.GET("/post", controller.PostListHandler)
 
-		v1.GET("/post2", controller.PostList2Handler)
-
-		v1.POST("/vote", controller.VoteHandler)
-
-		v1.POST("/comment", controller.CommentHandler)
-		v1.GET("/comment", controller.CommentListHandler)
-
-		v1.GET("/ping", func(c *gin.Context) {
-			c.String(http.StatusOK, "pong")
-		})
-
+		// 投票
+		v1.POST("/vote", controller.PostVoteController)
 	}
+
+	//pprof.Register(r) // 注册pprof相关路由
 
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
